@@ -13,7 +13,7 @@
 #include "esp_lvgl_port.h"
 
 #include "driver/ledc.h"
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 #include "driver/spi_master.h"
 
 #define TAG "MAIN"
@@ -46,20 +46,22 @@ static lv_indev_t *lvgl_touch_indev = NULL;
 
 void bsp_lcd_tp_init(void)
 {
-    const i2c_config_t i2c_conf = {
-        .mode = I2C_MODE_MASTER,
+    i2c_master_bus_handle_t bus_handle;
+    
+    const i2c_master_bus_config_t i2c_bus_conf = {
+        .i2c_port = EXAMPLE_TP_PORT,
         .sda_io_num = EXAMPLE_PIN_NUM_TP_SDA,
-        .sda_pullup_en = GPIO_PULLUP_DISABLE,
         .scl_io_num = EXAMPLE_PIN_NUM_TP_SCL,
-        .scl_pullup_en = GPIO_PULLUP_DISABLE,
-        .master.clk_speed = 400000
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .flags.enable_internal_pullup = false,
     };
-    ESP_ERROR_CHECK(i2c_param_config(EXAMPLE_TP_PORT, &i2c_conf));
-    ESP_ERROR_CHECK(i2c_driver_install(EXAMPLE_TP_PORT, i2c_conf.mode, 0, 0, 0));
-
+    
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_conf, &bus_handle));
+    
     esp_lcd_panel_io_handle_t io_handle = NULL;
     esp_lcd_panel_io_i2c_config_t io_config = ESP_LCD_TOUCH_IO_I2C_CST816S_CONFIG();
-    esp_lcd_new_panel_io_i2c(EXAMPLE_TP_PORT, &io_config, &io_handle);
+    esp_lcd_new_panel_io_i2c(bus_handle, &io_config, &io_handle);
 
     esp_lcd_touch_config_t tp_cfg = {
         .x_max = EXAMPLE_LCD_H_RES,
