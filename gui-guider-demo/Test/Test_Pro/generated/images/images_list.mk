@@ -1,0 +1,1 @@
+GEN_CSRCS += _dial0_alpha_360x360.c
